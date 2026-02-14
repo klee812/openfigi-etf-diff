@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openfigi-etf-diff"
+version = "0.1.0"
+description = "Monitor global ETF/ETP listings using the OpenFIGI API"
+requires-python = ">=3.12"
+dependencies = ["requests"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
