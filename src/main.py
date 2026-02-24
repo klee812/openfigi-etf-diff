@@ -12,6 +12,14 @@ from .storage import export_diff_csv, export_diff_json, load_snapshot
 
 
 def cmd_exchanges(args: argparse.Namespace) -> None:
+    """Handle the ``exchanges`` subcommand.
+
+    Fetches all valid exchange codes from the OpenFIGI API and prints them
+    in sorted order.
+
+    Args:
+        args: Parsed CLI arguments (unused beyond command dispatch).
+    """
     client = OpenFigiClient()
     codes = client.get_exchange_codes()
     print(f"Found {len(codes)} exchange codes:\n")
@@ -20,6 +28,14 @@ def cmd_exchanges(args: argparse.Namespace) -> None:
 
 
 def cmd_scan(args: argparse.Namespace) -> None:
+    """Handle the ``scan`` subcommand.
+
+    Runs a full scan of all exchanges and saves the resulting snapshot to
+    ``data/snapshot.json``. Prints a brief summary on completion.
+
+    Args:
+        args: Parsed CLI arguments (unused beyond command dispatch).
+    """
     client = OpenFigiClient()
     snapshot = full_scan(client)
     print(f"Scan complete.")
@@ -29,6 +45,16 @@ def cmd_scan(args: argparse.Namespace) -> None:
 
 
 def cmd_diff(args: argparse.Namespace) -> None:
+    """Handle the ``diff`` subcommand.
+
+    Loads the existing snapshot and runs an incremental diff against the
+    current API state. If new ETFs are found, exports them in the requested
+    format(s). Exits with code 1 if no prior snapshot exists.
+
+    Args:
+        args: Parsed CLI arguments. Reads ``args.format`` (``"csv"``,
+            ``"json"``, or ``"both"``).
+    """
     previous = load_snapshot()
     if previous is None:
         print("No existing snapshot found. Run 'scan' first.")
@@ -52,6 +78,15 @@ def cmd_diff(args: argparse.Namespace) -> None:
 
 
 def cmd_info(args: argparse.Namespace) -> None:
+    """Handle the ``info`` subcommand.
+
+    Loads the existing snapshot and prints summary statistics: timestamp,
+    exchange count, total composite FIGIs, and the top 20 exchanges by total.
+    Exits with code 1 if no prior snapshot exists.
+
+    Args:
+        args: Parsed CLI arguments (unused beyond command dispatch).
+    """
     snapshot = load_snapshot()
     if snapshot is None:
         print("No snapshot found. Run 'scan' first.")
@@ -72,6 +107,16 @@ def cmd_info(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
+    """Parse CLI arguments and dispatch to the appropriate subcommand handler.
+
+    Available subcommands:
+    - ``exchanges``: List all valid exchange codes.
+    - ``scan``: Run a full scan and save a snapshot.
+    - ``diff``: Incrementally diff against the last snapshot and export new ETFs.
+    - ``info``: Print statistics about the current snapshot.
+
+    The ``--verbose`` / ``-v`` flag enables DEBUG-level logging.
+    """
     parser = argparse.ArgumentParser(
         prog="openfigi-etf-diff",
         description="Monitor global ETF/ETP listings using the OpenFIGI API",

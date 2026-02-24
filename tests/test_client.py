@@ -2,6 +2,7 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from src.client import OpenFigiClient, RateLimiter
 
@@ -126,3 +127,30 @@ class TestOpenFigiClient:
             total = client.filter_etp_total("US")
         assert total == 1
         assert client.session.post.call_count == 2
+
+    def test_retry_on_connection_error(self):
+        client = self._make_client()
+
+        resp_ok = MagicMock()
+        resp_ok.status_code = 200
+        resp_ok.json.return_value = {"total": 7, "data": []}
+        resp_ok.raise_for_status = MagicMock()
+
+        client.session.post = MagicMock(
+            side_effect=[requests.exceptions.ConnectionError("remote disconnected"), resp_ok]
+        )
+
+        with patch("src.client.time.sleep"):
+            total = client.filter_etp_total("US")
+        assert total == 7
+        assert client.session.post.call_count == 2
+
+    def test_raises_after_max_connection_retries(self):
+        client = self._make_client()
+
+        client.session.post = MagicMock(
+            side_effect=requests.exceptions.ConnectionError("remote disconnected")
+        )
+
+        with patch("src.client.time.sleep"), pytest.raises(requests.exceptions.ConnectionError):
+            client.filter_etp_total("US")

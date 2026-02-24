@@ -15,6 +15,23 @@ logger = logging.getLogger(__name__)
 
 
 def load_snapshot(path: Path | None = None) -> FullSnapshot | None:
+    """Load a persisted snapshot from disk.
+
+    If the file does not exist, returns ``None`` rather than raising an error,
+    so callers can detect a first-run scenario.
+
+    Args:
+        path: Path to the JSON snapshot file. Defaults to
+            ``config.SNAPSHOT_PATH`` if ``None``.
+
+    Returns:
+        A :class:`~models.FullSnapshot` deserialized from the file, or
+        ``None`` if the file does not exist.
+
+    Raises:
+        json.JSONDecodeError: If the file exists but contains invalid JSON.
+        OSError: If the file cannot be read for reasons other than not existing.
+    """
     path = path or config.SNAPSHOT_PATH
     if not path.exists():
         return None
@@ -25,6 +42,21 @@ def load_snapshot(path: Path | None = None) -> FullSnapshot | None:
 
 
 def save_snapshot(snapshot: FullSnapshot, path: Path | None = None) -> None:
+    """Atomically persist a snapshot to disk as JSON.
+
+    Writes to a temporary file in the same directory, then calls
+    ``os.replace()`` to atomically swap it into place. This prevents a partial
+    write from corrupting the existing snapshot if the process is interrupted.
+    The parent directory is created if it does not already exist.
+
+    Args:
+        snapshot: The :class:`~models.FullSnapshot` to serialize and save.
+        path: Destination path for the JSON file. Defaults to
+            ``config.SNAPSHOT_PATH`` if ``None``.
+
+    Raises:
+        OSError: If the temporary file cannot be created or the replace fails.
+    """
     path = path or config.SNAPSHOT_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     data = snapshot.to_dict()
@@ -45,6 +77,23 @@ def save_snapshot(snapshot: FullSnapshot, path: Path | None = None) -> None:
 
 
 def export_diff_csv(diff: DiffResult, output_dir: Path | None = None) -> Path:
+    """Export new ETF records from a diff result to a timestamped CSV file.
+
+    The output filename is of the form ``new_etfs_YYYY-MM-DD_HHMMSS.csv``.
+    The output directory is created if it does not already exist.
+
+    Args:
+        diff: A :class:`~models.DiffResult` whose ``new_records`` will be
+            written as rows.
+        output_dir: Directory in which to create the CSV. Defaults to
+            ``config.OUTPUT_DIR`` if ``None``.
+
+    Returns:
+        The :class:`~pathlib.Path` of the newly created CSV file.
+
+    Raises:
+        OSError: If the output file cannot be created or written.
+    """
     output_dir = output_dir or config.OUTPUT_DIR
     output_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M%S")
@@ -64,6 +113,24 @@ def export_diff_csv(diff: DiffResult, output_dir: Path | None = None) -> Path:
 
 
 def export_diff_json(diff: DiffResult, output_dir: Path | None = None) -> Path:
+    """Export new ETF records from a diff result to a timestamped JSON file.
+
+    The output file contains a ``summary`` object with run statistics and a
+    ``new_records`` array with camelCase instrument objects. The output
+    filename is of the form ``new_etfs_YYYY-MM-DD_HHMMSS.json``.
+
+    Args:
+        diff: A :class:`~models.DiffResult` whose ``new_records`` and summary
+            statistics will be serialized.
+        output_dir: Directory in which to create the JSON file. Defaults to
+            ``config.OUTPUT_DIR`` if ``None``.
+
+    Returns:
+        The :class:`~pathlib.Path` of the newly created JSON file.
+
+    Raises:
+        OSError: If the output file cannot be created or written.
+    """
     output_dir = output_dir or config.OUTPUT_DIR
     output_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M%S")

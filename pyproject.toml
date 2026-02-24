@@ -7,7 +7,7 @@ name = "openfigi-etf-diff"
 version = "0.1.0"
 description = "Monitor global ETF/ETP listings using the OpenFIGI API"
 requires-python = ">=3.12"
-dependencies = ["requests"]
+dependencies = ["requests", "python-dotenv"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
